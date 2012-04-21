@@ -3,6 +3,7 @@ require_relative "ResourceManager"
 require_relative "Level"
 require_relative "Player"
 require_relative "Debug"
+require_relative "Star"
 
 $resource = ResourceManager.new
 $tex_size = 32
@@ -20,6 +21,7 @@ class Game
 		@level = Level.new
 		@level.load_from_file("test.txt")
 		@player = Player.new [1, 1]
+		@stars = Array.new(20) { Star.new(-5.0..5.0, -5.0..5.0) }
 	end
 
 	def draw
@@ -29,18 +31,22 @@ class Game
 		shape.position = [-20, 0]
 		shape.outline_thickness = 0.05
 		shape.outline_color = [255, 0, 0]
-		@app.draw shape
+		#@app.draw shape
 		shape.size = [0, 40]
 		shape.position = [0, -20]
-		@app.draw shape
+		#@app.draw shape
 
+		# Draw stars
+		@stars.each do |star|
+			@app.draw star.sprite
+		end
 		# Draw level
 		@level.each_block do |x, y, block|
 			if block == :ground
 				draw_transformed(x, y, $resource["BlockLow.png"])
 			end
 		end
-		# Draw Player
+		# Draw player
 		draw_transformed(@player.pos[0], @player.pos[1], $resource["Player.png"])
 
 		# Draw debug text
@@ -79,11 +85,18 @@ class Game
 	end
 
 	def update (dtime)
+		# Update players
 		@player.speed[0] = 0
 		@player.speed[0] = $speed if SFML::Keyboard.key_pressed? SFML::Keyboard::Right
 		@player.speed[0] = -$speed if SFML::Keyboard.key_pressed? SFML::Keyboard::Left
 		@player.jump if SFML::Keyboard.key_pressed? SFML::Keyboard::Up
 		@player.update dtime, @level
+		# Update stars
+		@stars.each_index do |i|
+			@stars[i].update dtime
+			@stars[i] = Star.new if @stars[i].position[0] < -5.5
+		end
+		# Debug display
 		$bug.show "Touching ground", @player.ground
 		$bug.show "Pos", @player.pos
 		$bug.show "Speed", @player.speed
