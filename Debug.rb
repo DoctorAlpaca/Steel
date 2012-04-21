@@ -7,7 +7,7 @@ class Debug
 	end
 	
 	def show (label, value)
-		@list[label.to_s] = value.inspect
+		@list[label.to_s] = value.to_s
 	end
 
 	def text

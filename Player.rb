@@ -23,6 +23,17 @@ class Player
 			@position[1] -= @speed[1] * dtime
 			@speed[1] = 0
 		end
+		# Cliff jumping not allowed.
+		if @position[1] < 0
+			@ground += 2 * dtime
+			@position[1] = 0.0
+			@speed[1] = 0.0
+		end
+
+		#if @position[0] < 0
+			#@position[0] += 20
+		#end
+		@position[0] %= 20
 
 		@ground = 0.1 if @ground > 0.1
 		@ground = 0 if @ground < 0

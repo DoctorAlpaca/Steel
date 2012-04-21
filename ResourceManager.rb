@@ -20,12 +20,22 @@ class ResourceManager
 		else
 			puts "Can't do anything with file " + filename.to_s
 		end
-		@files[filename].loadFromFile(filename)
+		@files[filename].loadFromFile("resource/" + filename)
 		return @files[filename]
 	end
 
 	def [](file)
 		return open(file)
+	end
+
+	def play_sound (filename)
+		sound = SFML::Sound.new open(filename)
+		@sounds.push(sound)
+		sound.play
+	end
+
+	def update
+
 	end
 
 	def play_music(filename)
