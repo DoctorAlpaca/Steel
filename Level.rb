@@ -12,12 +12,14 @@ class Level
 
 	def load_from_file (filename)
 		File.open(filename, "r") do |file|
-			x = y = 0
+			x = 0
+			y = 19
 			
 			file.each_line do |line|
 				line.each_char do |char|
+					break if char == "\n"
+					puts x.to_s + ": " + char
 					char.upcase!
-					puts x.to_s + ", " + y.to_s + ", " + char
 					if char == "O"
 						set_block(x, y, :ground)
 					else
@@ -26,7 +28,7 @@ class Level
 					x += 1
 				end
 				x = 0
-				y += 1
+				y -= 1
 			end
 						
 		end
@@ -52,6 +54,17 @@ class Level
 				yield x, y, get_block(x, y)
 			end
 		end
+	end
+
+	def collision? (with, blockType = :ground)
+		each_block do |x, y, block|
+			if block == blockType
+				if with.intersects? (SFML::Rect.new(x, y, 1, 1))
+					return true
+				end
+			end
+		end
+		return false 
 	end
 	
 end

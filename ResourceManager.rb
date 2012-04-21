@@ -11,7 +11,6 @@ class ResourceManager
 	end
 
 	def open(filename)
-		#debugger
 		return @files[filename] if @files.has_key? filename
 		puts "Loading file " + filename
 		if filename =~ /\.png/
