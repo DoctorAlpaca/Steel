@@ -6,16 +6,14 @@ require_relative "Debug"
 
 $resource = ResourceManager.new
 $tex_size = 32
-$tex_size.freeze
-$accel = 400
+$speed = 7
 $grav = 50
-$breakx = 50
-$breaky = 0
 $bug = Debug.new
 
 class Game
 	def initialize
 		@app = SFML::RenderWindow.new([640, 640], "Steel")
+		#@app.vertical_sync_enabled = true
 		@cam = SFML::View.new([0, 0], [10, 10])
 		@app.view = @cam
 		@timer = SFML::Clock.new
@@ -47,9 +45,10 @@ class Game
 
 		# Draw debug text
 		txt = $bug.text
-		txt.position = [-5, -5]
-		txt.scale = [0.01, 0.01]
+		@app.view = SFML::View.new([320, 320], [640, 640])
+		txt.scale = [0.5, 0.5]
 		@app.draw txt
+		@app.view = @cam
 	end
 
 	# Draws a single graphic, applying transformations.
@@ -80,8 +79,9 @@ class Game
 	end
 
 	def update (dtime)
-		@player.speed[0] += $accel * dtime if SFML::Keyboard.key_pressed? SFML::Keyboard::Right
-		@player.speed[0] -= $accel * dtime if SFML::Keyboard.key_pressed? SFML::Keyboard::Left
+		@player.speed[0] = 0
+		@player.speed[0] = $speed if SFML::Keyboard.key_pressed? SFML::Keyboard::Right
+		@player.speed[0] = -$speed if SFML::Keyboard.key_pressed? SFML::Keyboard::Left
 		@player.jump if SFML::Keyboard.key_pressed? SFML::Keyboard::Up
 		@player.update dtime, @level
 		$bug.show "Touching ground", @player.ground

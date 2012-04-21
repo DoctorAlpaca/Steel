@@ -13,9 +13,6 @@ class Player
 
 		@speed[1] -= $grav * dtime
 		
-		@speed[0] += -$breakx * @speed[0] * dtime
-		@speed[1] += -$breaky * @speed[1] * dtime
-		
 		@position[0] += @speed[0] * dtime
 		if obstacles.collision? hitbox
 			@position[0] -= @speed[0] * dtime
