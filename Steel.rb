@@ -164,6 +164,7 @@ class Game
 		if @level.collision?(@player.hitbox, :lever)
 			@level_nr += 1
 			@level.load_from_file(@level_nr.to_s + ".lvl")
+			$resource.play_sound("Change.wav")
 		end
 		
 		# Update stars
