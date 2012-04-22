@@ -1,5 +1,3 @@
-require "pry" # TODO remove!
-
 require "sfml/graphics"
 require_relative "ResourceManager"
 require_relative "Level"
@@ -7,6 +5,7 @@ require_relative "Player"
 require_relative "Debug"
 require_relative "Star"
 require_relative "util"
+require_relative "Enemy"
 
 $resource = ResourceManager.new
 $tex_size = 32
@@ -21,11 +20,12 @@ class Game
 		@cam = SFML::View.new([0, -10], [10, 10])
 		@app.view = @cam
 		@timer = SFML::Clock.new
+		@level_nr = 6
 		@level = Level.new
-		@level.load_from_file("1.lvl")
+		@level.load_from_file(@level_nr.to_s + ".lvl")
 		@player = Player.new
+		@checkpoint = [@player.pos[0], @player.pos[1]]
 		@stars = Array.new(30) { Star.new(-5.0..5.0, -5.0..5.0) }
-		@level_nr = 1
 		# TODO enable title
 		@title = false
 		@title_fade = 2.0
@@ -93,11 +93,18 @@ class Game
 		rect.position = [-10, 1]
 		rect.fill_color = [0, 0, 0]
 		@app.draw rect
+
+		# Draw enemies
+		@level.enemies.each do |x|
+			draw_object(x.position[0], x.position[1], x.type)
+			draw_object(x.position[0] - 20, x.position[1], x.type)
+			draw_object(x.position[0] + 20, x.position[1], x.type)
+		end
 		
 		# Draw player
 		draw_object(@player.pos[0], @player.pos[1], :player)
 
-		# Draw debug text
+		# Draw debug text TODO remove
 		txt = $bug.text
 		@app.view = SFML::View.new([320, 320], [640, 640])
 		txt.scale = [0.5, 0.5]
@@ -128,6 +135,10 @@ class Game
 				sprite.texture = $resource["Ground.png"]
 			when :lever
 				sprite.texture = $resource["Lever.png"]
+			when :robot
+				sprite.texture = $resource["Robot.png"]
+			when :energy
+				sprite.texture = $resource["Energy.png"]
 		end
 		if not color.nil?
 			sprite.color = color
@@ -165,6 +176,7 @@ class Game
 			@level_nr += 1
 			@level.load_from_file(@level_nr.to_s + ".lvl")
 			$resource.play_sound("Change.wav")
+		@checkpoint = [@player.pos[0], @player.pos[1]]
 		end
 		
 		# Update stars
@@ -172,20 +184,38 @@ class Game
 			@stars[i].update dtime
 			@stars[i] = Star.new if @stars[i].position[0] < -5.5
 		end
+		
 		# Update blocks
 		@level.update dtime
+
+		# Check for enemy collision
+		hit = false
+		@level.enemies.each do |x|
+			if x.hitbox.intersects? @player.hitbox
+				hit = true
+			end
+		end
+		restart if hit
+
+		restart(false) if SFML::Keyboard.key_pressed? SFML::Keyboard::R
+		
 		# Update camera
 		@cam.center = [@cam.center.x, -@cam.center.y]
 		@cam.center += SFML::Vector2.new((@player.pos[0] - @cam.center.x) * dtime * 10, (@player.pos[1] - @cam.center.y) * dtime * 10)
 		@cam.center = [@cam.center.x, -@cam.center.y]
+		
 		# Update resources
 		$resource.update
 		
-		# Debug display
-		$bug.show "Touching ground", @player.ground
-		$bug.show "Pos", @player.pos
-		$bug.show "Speed", @player.speed
-		$bug.show "Camera", @cam.center
+		# Debug display TODO remove
+		$bug.show "Checkpoint", @checkpoint
+	end
+
+	def restart (sound = true)
+		@player.position = [@checkpoint[0], @checkpoint[1]]
+		@cam.center = [@cam.center.x - 20, @cam.center.y] if (@cam.center.x - @player.pos[0]).abs > 10
+		@level.load_from_file(@level_nr.to_s + ".lvl")
+		$resource.play_sound("Hit.wav") if sound
 	end
 
 	def game_loop

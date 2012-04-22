@@ -2,16 +2,18 @@ require "sfml/graphics"
 
 class Level
 
-	attr_reader :width, :height
+	attr_reader :width, :height, :enemies
 
 	def initialize (width = 20, height = 20)
 		@width = width
 		@height = height
 		@level = Array.new(@width * @height) { { :type => :air, :morph => 0, :old_type => :air } }
 		@heights = Array.new(@width)
+		@enemies = Array.new
 	end
 
 	def load_from_file (filename)
+		@enemies.clear
 		filename = "resource/" + filename
 		puts "Loading level"
 		File.open(filename, "r") do |file|
@@ -29,8 +31,17 @@ class Level
 					if char == "O"
 						set_block_type(x, y, :ground)
 						@heights[x] = y if @heights[x] <= y
+					elsif char == "I"
+						set_block_type(x, y, :ground)
 					elsif char == "L"
 						set_block_type(x, y, :lever)
+						@heights[x] = y if @heights[x] <= y
+					elsif char == "R"
+						set_block_type(x, y, :air)
+						@enemies.push(Enemy.new([x, y], :robot))
+					elsif char == "E"
+						set_block_type(x, y, :air)
+						@enemies.push(Enemy.new([x, y], :energy))
 					else
 						set_block_type(x, y, :air)
 					end
@@ -57,7 +68,7 @@ class Level
 
 	def get_block(x, y)
 		x %= width
-		y %= height
+		y = [y, 19].min
 		return @level[x + y * width]
 	end
 	def get_block_type(x, y)
@@ -82,15 +93,22 @@ class Level
 	end
 
 	def collision? (with, blockType = :ground)
-		each_block do |x, y, block|
-			if block[:type] == blockType
-				if blockType == :lever
-					if with.intersects? (SFML::Rect.new(x+0.4, y, 0.2, 1))
-						return true
-					end
-				else
-					if with.intersects? (SFML::Rect.new(x, y, 1, 1))
-						return true
+		range_x = with.left.to_i
+		range_x = (range_x-1)..(range_x+1)
+		range_y = with.top.to_i
+		range_y = (range_y-1)..(range_y+1)
+		range_x.each do |x|
+			range_y.to_a.reverse.each do |y|
+				block = get_block(x, y)
+				if block[:type] == blockType
+					if blockType == :lever
+						if with.intersects? (SFML::Rect.new(x+0.4, y, 0.2, 1))
+							return true
+						end
+					else
+						if with.intersects? (SFML::Rect.new(x, y, 1, 1))
+							return true
+						end
 					end
 				end
 			end
@@ -103,5 +121,6 @@ class Level
 			block[:morph] += dtime * 2
 			block[:morph] = 1.0 if block[:morph] > 1.0
 		end
+		@enemies.each { |e| e.update dtime, self }
 	end
 end

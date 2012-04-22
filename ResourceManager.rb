@@ -39,7 +39,6 @@ class ResourceManager
 		@sounds.delete_if do |i|
 			i.status == SFML::Sound::Stopped
 		end
-		puts @sounds.length
 	end
 
 	def play_music(filename)
