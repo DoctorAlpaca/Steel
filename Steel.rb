@@ -11,28 +11,28 @@ $resource = ResourceManager.new
 $tex_size = 32
 $speed = 7
 $grav = 50
-$bug = Debug.new
+$bug = :bug_was_removed
 
 class Game
 	def initialize
 		@app = SFML::RenderWindow.new([640, 640], "Steel")
-		#@app.vertical_sync_enabled = true
+		@app.vertical_sync_enabled = true
 		@cam = SFML::View.new([0, -10], [10, 10])
 		@app.view = @cam
 		@timer = SFML::Clock.new
-		@level_nr = 1
+		@level_nr = 10
 		@level = Level.new
 		@level.load_from_file(@level_nr.to_s + ".lvl")
 		@player = Player.new
 		@checkpoint = [@player.pos[0], @player.pos[1]]
 		@stars = Array.new(30) { Star.new(-5.0..5.0, -5.0..5.0) }
-		# TODO enable title
-		@title = false
+		@title = true
 		@title_fade = 2.0
 
 		@rocket_launched = false
 		@rocket_timer = 0.0
 		@last_noise = 0.0
+		@vic_played
 	end
 
 	def draw_title
@@ -42,7 +42,15 @@ class Game
 		rbSFML = SFML::Sprite.new $resource["rbSFML.png"]
 		rbSFML.position = [640 - 200, 640 - 150]
 
-		rbSFML.color = kitten.color = [255, 255, 255, (@title_fade / 2.0 * 255).to_i]
+		logo = SFML::Sprite.new $resource["Logo.png"]
+		logo.position = [(640-54*8)/2, 100]
+		logo.scale = [8, 8]
+
+		instr = SFML::Sprite.new $resource["Instruction.png"]
+		instr.position = [(640-54*2)/2, 380]
+		instr.scale = [2, 2]
+
+		instr.color = logo.color = rbSFML.color = kitten.color = [255, 255, 255, (@title_fade / 2.0 * 255).to_i]
 		
 		view = SFML::View.new
 		view.viewport = [0, 0, 640, 640]
@@ -50,6 +58,8 @@ class Game
 
 		@app.draw kitten
 		@app.draw rbSFML
+		@app.draw logo
+		@app.draw instr
 		
 		@app.view = @cam
 	end
@@ -108,13 +118,6 @@ class Game
 		# Draw player
 		draw_object(@player.pos[0], @player.pos[1], :player) unless @rocket_launched
 
-		# Draw debug text TODO remove
-		txt = $bug.text
-		@app.view = SFML::View.new([320, 320], [640, 640])
-		txt.scale = [0.5, 0.5]
-		@app.draw txt
-		@app.view = @cam
-
 		# Guess.
 		draw_title unless @title_fade < 0
 	end
@@ -164,7 +167,10 @@ class Game
 
 	def update (dtime)
 		if @title
-			@title = false if SFML::Keyboard.key_pressed? SFML::Keyboard::Return
+			if SFML::Keyboard.key_pressed? SFML::Keyboard::Return
+				@title = false 
+				$resource.play_music("Music.wav")
+			end
 		else
 			# Update title screen
 			@title_fade -= dtime
@@ -219,14 +225,11 @@ class Game
 		
 		# Update camera
 		@cam.center = [@cam.center.x, -@cam.center.y]
-		@cam.center += SFML::Vector2.new((@player.pos[0] - @cam.center.x) * dtime * 10, (@player.pos[1] - @cam.center.y) * dtime * 10)
+		@cam.center += SFML::Vector2.new((@player.pos[0] + 0.5 - @cam.center.x) * dtime * 10, (@player.pos[1] - @cam.center.y) * dtime * 10)
 		@cam.center = [@cam.center.x, -@cam.center.y]
 		
 		# Update resources
 		$resource.update
-		
-		# Debug display TODO remove
-		$bug.show "Checkpoint", @checkpoint
 	end
 
 	def restart (sound = true)
@@ -235,25 +238,18 @@ class Game
 		@level.load_from_file(@level_nr.to_s + ".lvl")
 		$resource.play_sound("Hit.wav") if sound
 	end
-
+	
 	def game_loop
 		@timer.restart
 		
 		while @app.open?
 			dtime = @timer.restart.asSeconds
-
-			$bug.show "FPS", 1/dtime
 			
 			dtime = 0.1 if dtime > 0.1
-
-			dtime *= 0.1 if SFML::Keyboard.key_pressed? SFML::Keyboard::Space
 			
 			@app.each_event do |event|
 				if event.type == SFML::Event::Closed
 					@app.close
-				end
-				if event.type == SFML::Event::KeyPressed and event.key.code == SFML::Keyboard::F
-					@level.load_from_file("test.txt")
 				end
 			end
 
@@ -272,11 +268,28 @@ class Game
 				else
 					y += -(0.5/4) + (@rocket_timer - 0.5) * 5
 				end
+
+				if @rocket_timer < 4
+					$resource.music.volume = (4 - @rocket_timer) / 4.0 * 100
+				end
+
+				@app.view = @app.default_view
+				if @rocket_timer > 8
+					$resource.play_music("Victory.wav") if not @vic_played
+					$resource.music.volume = 100
+					@vic_played = true
+					spr = SFML::Sprite.new $resource["End.png"]
+					spr.scale = [8, 8]
+					spr.position = [50, 180]
+					@app.draw spr
+				end
+				@app.view = @cam
+				
 				if @rocket_timer - @last_noise > 0.1
 					@last_noise = @rocket_timer
-					$resource.play_sound("Rocket.wav", 0.7**@rocket_timer)
+					$resource.play_sound("Rocket.wav", 0.5**@rocket_timer)
 				end
-				@cam.center = [x + rand(-0.5..0.5), -y + rand(-0.5..0.5) - 2]
+				@cam.center = [x + rand(-0.5..0.5) - 0.5, -y + rand(-0.5..0.5) - 1]
 				draw_object x, y, :rocket_launched
 			end
 

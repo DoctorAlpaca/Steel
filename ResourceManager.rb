@@ -2,7 +2,7 @@ require "sfml/graphics"
 require "sfml/audio"
 
 class ResourceManager
-	attr_accessor :files, :sounds
+	attr_accessor :files, :sounds, :music
 
 	def initialize()
 		@files = Hash.new
@@ -44,7 +44,7 @@ class ResourceManager
 
 	def play_music(filename)
 		@music.stop
-		@music.openFromFile filename
+		@music.openFromFile "resource/" + filename
 		@music.play
 	end
 end

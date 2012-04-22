@@ -38,7 +38,6 @@ class Enemy
 				end
 				@position[0] %= 20
 		end
-		$bug.show "Enemy", @position
 	end
 
 	def hitbox
