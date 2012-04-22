@@ -15,7 +15,6 @@ class Level
 	def load_from_file (filename)
 		@enemies.clear
 		filename = "resource/" + filename
-		puts "Loading level"
 		File.open(filename, "r") do |file|
 			x = 0
 			y = 19

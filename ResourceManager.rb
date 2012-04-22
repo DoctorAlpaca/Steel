@@ -8,17 +8,15 @@ class ResourceManager
 		@files = Hash.new
 		@sounds = Array.new
 		@music = SFML::Music.new
+		@music_loaded = false
 	end
 
 	def open(filename)
 		return @files[filename] if @files.has_key? filename
-		puts "Loading file " + filename
 		if filename =~ /\.png/
 			@files[filename] = SFML::Texture.new
 		elsif filename =~ /\.[(wav)(ogg)]/
 			@files[filename] = SFML::SoundBuffer.new
-		else
-			puts "Can't do anything with file " + filename.to_s
 		end
 		@files[filename].loadFromFile("resource/" + filename)
 		return @files[filename]
@@ -40,11 +38,13 @@ class ResourceManager
 		@sounds.delete_if do |i|
 			i.status == SFML::Sound::Stopped
 		end
+		@music.play if @music.status == SFML::Music::Stopped and @music_loaded
 	end
 
 	def play_music(filename)
 		@music.stop
 		@music.openFromFile "resource/" + filename
 		@music.play
+		@music_loaded = true
 	end
 end

@@ -20,7 +20,7 @@ class Game
 		@cam = SFML::View.new([0, -10], [10, 10])
 		@app.view = @cam
 		@timer = SFML::Clock.new
-		@level_nr = 10
+		@level_nr = 1
 		@level = Level.new
 		@level.load_from_file(@level_nr.to_s + ".lvl")
 		@player = Player.new
