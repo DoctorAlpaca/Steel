@@ -1,9 +1,7 @@
 Steel - Ludum dare #23 entry by Lupinius
 
-After crashing on a strange, small planet made out of steel the only thing in sight is a lever. Try to escape!
-
-Development version, doesn't actually work right now. Give me some time, jeez.
+After crashing on a strange, small planet made out of steel the only thing in sight is a lever. As you pull it, the planet seems to change...
 
 Usage:
-Windows: Just run the .exe file.
-Other: Linux binaries might follow. In the mean time you need Ruby 1.9.3 and rbSFML installed to launch. To start the game use "ruby Steel.rb".
+Windows binaries are available, Linux binaries might follow.
+To start you need Ruby 1.9.3 and rbSFML installed to launch. To start the game use "ruby Steel.rb".
