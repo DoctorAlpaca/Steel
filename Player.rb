@@ -30,18 +30,16 @@ class Player
 			@speed[1] = 0.0
 		end
 
-		#if @position[0] < 0
-			#@position[0] += 20
-		#end
-		@position[0] %= 20
-
 		@ground = 0.1 if @ground > 0.1
 		@ground = 0 if @ground < 0
 	end
 
 	def jump
-		@speed[1] = 15 if @ground > 0.01
-		@ground = 0 if @ground > 0.01
+		if @ground > 0.01
+			@speed[1] = 15 
+			@ground = 0
+			$resource.play_sound("Jump.wav")
+		end
 	end
 
 	def pos
@@ -52,6 +50,6 @@ class Player
 	end
 
 	def hitbox
-		return SFML::Rect.new(@position[0] + 0.2, @position[1], 0.5, 0.8)
+		return SFML::Rect.new(@position[0] + 0.25, @position[1], 0.4, 0.8)
 	end
 end

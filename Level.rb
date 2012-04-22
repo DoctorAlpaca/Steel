@@ -28,7 +28,9 @@ class Level
 					char.upcase!
 					if char == "O"
 						set_block_type(x, y, :ground)
-						@heights[x] = y + 1 if @heights[x] <= y
+						@heights[x] = y if @heights[x] <= y
+					elsif char == "L"
+						set_block_type(x, y, :lever)
 					else
 						set_block_type(x, y, :air)
 					end
@@ -49,7 +51,7 @@ class Level
 						
 		end
 		each_block do |x, y, block|
-			block[:morph] = 1.0
+			block[:morph] = 0.0
 		end
 	end
 
@@ -71,9 +73,9 @@ class Level
 		get_block(x, y)[:type] = value
 	end
 
-	def each_block
-		(@width+1).times do |x|
-			@height.times do |y|
+	def each_block (range_x = 0..(@width), range_y = 0..(@height-1))
+		range_x.each do |x|
+			range_y.to_a.reverse.each do |y|
 				yield x, y, get_block(x, y)
 			end
 		end
@@ -82,8 +84,14 @@ class Level
 	def collision? (with, blockType = :ground)
 		each_block do |x, y, block|
 			if block[:type] == blockType
-				if with.intersects? (SFML::Rect.new(x, y, 1, 1))
-					return true
+				if blockType == :lever
+					if with.intersects? (SFML::Rect.new(x+0.4, y, 0.2, 1))
+						return true
+					end
+				else
+					if with.intersects? (SFML::Rect.new(x, y, 1, 1))
+						return true
+					end
 				end
 			end
 		end
@@ -92,8 +100,8 @@ class Level
 
 	def update dtime
 		each_block do |x, y, block|
-			block[:morph] -= dtime * 2
-			block[:morph] = 0.0 if block[:morph] < 0.0
+			block[:morph] += dtime * 2
+			block[:morph] = 1.0 if block[:morph] > 1.0
 		end
 	end
 end

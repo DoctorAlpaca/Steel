@@ -18,18 +18,17 @@ class Game
 	def initialize
 		@app = SFML::RenderWindow.new([640, 640], "Steel")
 		#@app.vertical_sync_enabled = true
-		@cam = SFML::View.new([0, -10], [20, 10])
+		@cam = SFML::View.new([0, -10], [10, 10])
 		@app.view = @cam
 		@timer = SFML::Clock.new
 		@level = Level.new
-		@level.load_from_file("test.txt")
-		@player = Player.new [1, 1]
+		@level.load_from_file("1.lvl")
+		@player = Player.new
 		@stars = Array.new(30) { Star.new(-5.0..5.0, -5.0..5.0) }
+		@level_nr = 1
 		# TODO enable title
 		@title = false
 		@title_fade = 2.0
-
-		@view_angle
 	end
 
 	def draw_title
@@ -52,44 +51,51 @@ class Game
 	end
 
 	def draw
-		# Axis
-		shape = SFML::RectangleShape.new
-		shape.size = [40, 0]
-		shape.position = [-20, 0]
-		shape.outline_thickness = 0.05
-		shape.outline_color = [255, 0, 0]
-		#@app.draw shape
-		shape.size = [0, 40]
-		shape.position = [0, -20]
-		#@app.draw shape
-
 		# Draw stars
+		@app.view = SFML::View.new([0, 0], [10, 10])
 		@stars.each do |star|
 			@app.draw star.sprite
 		end
+		@app.view = @cam
+		
 		# Draw level
-		@level.each_block do |x, y, block|
+		@level.each_block -10..30 do |x, y, block|
 			m = block[:morph]
 			x = x.to_f
 			if block[:old_type] == :air
-				y /= (1.0-m)
+				y *= m
 			end
 			if block[:type] == :ground
 				if block[:old_type] == :bg
-					draw_transformed(x, y, $resource["BlockLow.png"], [(100 * m + 255 * (1-m)).to_i]*3)
+					draw_object(x, y, :ground, [(255 * m + 100 * (1-m)).to_i]*3)
 				else
-					draw_transformed(x, y, $resource["BlockLow.png"])
+					draw_object(x, y, :ground)
 				end
 			elsif block[:type] == :bg
 				if block[:old_type] == :ground
-					draw_transformed(x, y, $resource["BlockLow.png"], [(255 * m + 100 * (1-m)).to_i]*3)
+					draw_object(x, y, :bg, [(255 * (1-m) + 100 * m).to_i]*3)
 				else
-					draw_transformed(x, y, $resource["BlockLow.png"], [100, 100, 100])
+					draw_object(x, y, :bg)
 				end
+			elsif block[:type] == :air
+				y *= (1-m)
+				draw_object(x, y, block[:old_type])
+			else
+				draw_object(x, y, :bg)
+				draw_object(x, y, block[:type])
 			end
 		end
+		# Draw ground of planet
+		(-10..30).each do |x|
+			draw_object(x, -1, :planet_ground)
+		end
+		rect = SFML::RectangleShape.new([40, 40])
+		rect.position = [-10, 1]
+		rect.fill_color = [0, 0, 0]
+		@app.draw rect
+		
 		# Draw player
-		draw_transformed(@player.pos[0], @player.pos[1], $resource["Player.png"])
+		draw_object(@player.pos[0], @player.pos[1], :player)
 
 		# Draw debug text
 		txt = $bug.text
@@ -102,62 +108,64 @@ class Game
 		draw_title unless @title_fade < 0
 	end
 
-	# Draws a single graphic, applying transformations.
-	def draw_transformed (x, y, graphic, color = [255, 255, 255, 255])
+	# Draws a single graphic, applying transformations (not much anymore).
+	def draw_object (x, y, type, color = nil)
 
-=begin
-		y += 2
-	
-		angle = -(x+0.5) / 20.0 * 360
-		sprite = SFML::Sprite.new graphic
-		sprite.color = color
-		sprite.scale = [1.0/$tex_size]*2
-		sprite.origin = [$tex_size/2]*2
-		sprite.position = [Math.cos(angle.radians) * y, -Math.sin(angle.radians) * y]
-		sprite.rotation = -angle + 90
-		@app.draw sprite
-=end
+		y = -y - 1
 
-		y += 10
-		
-		vertices = Array.new(4) { SFML::Vertex.new }
-		
-		vertices[0].position = [x, y]
-		vertices[1].position = [x+1, y]
-		vertices[2].position = [x+1, y+1]
-		vertices[3].position = [x, y+1]
-
-		vertices.each do |v|
-			angle = -v.position[0] / 20.0 * (2 * Math::PI) + @view_angle
-			v.position[1] = 0 if v.position[1] < 0
-			v.position = [Math.cos(angle) * v.position[1], v.position[1] * -Math.sin(angle)]
+		sprite = SFML::Sprite.new
+		case type
+			when :ground
+				sprite.texture = $resource["BlockLow.png"]
+			when :bg
+				sprite.texture = $resource["BlockLow.png"]
+				sprite.color = [100, 100, 100]
+			when :air
+				return
+			when :player
+				sprite.texture = $resource["Player.png"]
+			when :planet_ground
+				sprite.texture = $resource["Ground.png"]
+			when :lever
+				sprite.texture = $resource["Lever.png"]
 		end
-
-		vertices[0].tex_coords = [0, $tex_size]
-		vertices[1].tex_coords = [$tex_size, $tex_size]
-		vertices[2].tex_coords = [$tex_size, 0]
-		vertices[3].tex_coords = [0, 0]
-
-		vertices.each { |x| x.color = color }
-
-		state = SFML::RenderStates.new
-		state.texture = graphic 
-		@app.draw vertices, SFML::Quads, state
+		if not color.nil?
+			sprite.color = color
+		end
+		sprite.scale = [1.0/$tex_size]*2
+		sprite.position = [x, y]
+		@app.draw sprite
 	end
 
 	def update (dtime)
 		if @title
 			@title = false if SFML::Keyboard.key_pressed? SFML::Keyboard::Return
 		else
+			# Update title screen
 			@title_fade -= dtime
 			@title_fade = -1 if @title_fade < -1
+			
 			# Update player
 			@player.speed[0] = 0
 			@player.speed[0] = $speed if SFML::Keyboard.key_pressed? SFML::Keyboard::Right
 			@player.speed[0] = -$speed if SFML::Keyboard.key_pressed? SFML::Keyboard::Left
 			@player.jump if SFML::Keyboard.key_pressed? SFML::Keyboard::Up
 			@player.update dtime, @level
+			if @player.pos[0] > 20
+				@player.pos[0] -= 20
+				@cam.center = [@cam.center.x - 20, @cam.center.y]
+			elsif @player.pos[0] < 0
+				@player.pos[0] += 20
+				@cam.center = [@cam.center.x + 20, @cam.center.y]
+			end
 		end
+
+		# Advance level?
+		if @level.collision?(@player.hitbox, :lever)
+			@level_nr += 1
+			@level.load_from_file(@level_nr.to_s + ".lvl")
+		end
+		
 		# Update stars
 		@stars.each_index do |i|
 			@stars[i].update dtime
@@ -166,12 +174,17 @@ class Game
 		# Update blocks
 		@level.update dtime
 		# Update camera
-		@view_angle = (@player.pos[0]+0.5) / 20.0 * (2 * Math::PI) + (Math::PI/2)
-		@cam.center = [0, -@player.pos[1] - 10]
+		@cam.center = [@cam.center.x, -@cam.center.y]
+		@cam.center += SFML::Vector2.new((@player.pos[0] - @cam.center.x) * dtime * 10, (@player.pos[1] - @cam.center.y) * dtime * 10)
+		@cam.center = [@cam.center.x, -@cam.center.y]
+		# Update resources
+		$resource.update
+		
 		# Debug display
 		$bug.show "Touching ground", @player.ground
 		$bug.show "Pos", @player.pos
 		$bug.show "Speed", @player.speed
+		$bug.show "Camera", @cam.center
 	end
 
 	def game_loop
@@ -181,9 +194,11 @@ class Game
 			dtime = @timer.restart.asSeconds
 
 			$bug.show "FPS", 1/dtime
-
+			
 			dtime = 0.1 if dtime > 0.1
-		
+
+			dtime *= 0.1 if SFML::Keyboard.key_pressed? SFML::Keyboard::Space
+			
 			@app.each_event do |event|
 				if event.type == SFML::Event::Closed
 					@app.close

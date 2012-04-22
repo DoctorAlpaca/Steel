@@ -6,7 +6,7 @@ class ResourceManager
 
 	def initialize()
 		@files = Hash.new
-		@sounds = Hash.new
+		@sounds = Array.new
 		@music = SFML::Music.new
 	end
 
@@ -32,10 +32,14 @@ class ResourceManager
 		sound = SFML::Sound.new open(filename)
 		@sounds.push(sound)
 		sound.play
+		sound.pitch = rand(0.9..1.2)
 	end
 
 	def update
-
+		@sounds.delete_if do |i|
+			i.status == SFML::Sound::Stopped
+		end
+		puts @sounds.length
 	end
 
 	def play_music(filename)
