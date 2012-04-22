@@ -45,6 +45,7 @@ class Enemy
 		case type
 			when :robot then SFML::Rect.new(@position[0] + 0.25, @position[1], 0.4, 0.8)
 			when :energy then SFML::Rect.new(@position[0] + 0.25, @position[1] + 0.25, 0.5, 0.5)
+			when :rocket then SFML::Rect.new(@position[0] + 0.25, @position[1] + 0.25, 2, 4)
 		end
 	end
 end

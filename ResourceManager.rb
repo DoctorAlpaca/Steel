@@ -28,10 +28,11 @@ class ResourceManager
 		return open(file)
 	end
 
-	def play_sound (filename)
+	def play_sound (filename, volume = 1)
 		sound = SFML::Sound.new open(filename)
 		@sounds.push(sound)
 		sound.play
+		sound.volume *= volume
 		sound.pitch = rand(0.9..1.2)
 	end
 

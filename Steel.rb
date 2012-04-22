@@ -20,7 +20,7 @@ class Game
 		@cam = SFML::View.new([0, -10], [10, 10])
 		@app.view = @cam
 		@timer = SFML::Clock.new
-		@level_nr = 6
+		@level_nr = 1
 		@level = Level.new
 		@level.load_from_file(@level_nr.to_s + ".lvl")
 		@player = Player.new
@@ -29,6 +29,10 @@ class Game
 		# TODO enable title
 		@title = false
 		@title_fade = 2.0
+
+		@rocket_launched = false
+		@rocket_timer = 0.0
+		@last_noise = 0.0
 	end
 
 	def draw_title
@@ -102,7 +106,7 @@ class Game
 		end
 		
 		# Draw player
-		draw_object(@player.pos[0], @player.pos[1], :player)
+		draw_object(@player.pos[0], @player.pos[1], :player) unless @rocket_launched
 
 		# Draw debug text TODO remove
 		txt = $bug.text
@@ -115,12 +119,13 @@ class Game
 		draw_title unless @title_fade < 0
 	end
 
-	# Draws a single graphic, applying transformations (not much anymore).
+	# Draws a single Object.
 	def draw_object (x, y, type, color = nil)
 
 		y = -y - 1
 
 		sprite = SFML::Sprite.new
+		sprite.scale = [1.0/$tex_size]*2
 		case type
 			when :ground
 				sprite.texture = $resource["BlockLow.png"]
@@ -139,11 +144,20 @@ class Game
 				sprite.texture = $resource["Robot.png"]
 			when :energy
 				sprite.texture = $resource["Energy.png"]
+			when :cat
+				sprite.texture = $resource["Cat.png"]
+			when :rocket
+				sprite.texture = $resource["Rocket.png"] unless @rocket_launched
+				sprite.scale = [1.0/$tex_size * 4]*2
+				y -= 3
+			when :rocket_launched
+				sprite.texture = $resource["Rocket_Launched.png"]
+				sprite.scale = [1.0/$tex_size * 4]*2
+				y -= 2.25
 		end
 		if not color.nil?
 			sprite.color = color
 		end
-		sprite.scale = [1.0/$tex_size]*2
 		sprite.position = [x, y]
 		@app.draw sprite
 	end
@@ -192,7 +206,11 @@ class Game
 		hit = false
 		@level.enemies.each do |x|
 			if x.hitbox.intersects? @player.hitbox
-				hit = true
+				if x.type == :rocket
+					@rocket_launched = true
+				else
+					hit = true
+				end
 			end
 		end
 		restart if hit
@@ -239,11 +257,28 @@ class Game
 				end
 			end
 
-			update dtime
+			update dtime unless @rocket_launched
 
 			@app.clear [0, 10, 20]
-
+			
 			draw
+
+			if @rocket_launched
+				@rocket_timer += dtime
+				x = 12
+				y = 1
+				if @rocket_timer < 0.5
+					y -= @rocket_timer / 4
+				else
+					y += -(0.5/4) + (@rocket_timer - 0.5) * 5
+				end
+				if @rocket_timer - @last_noise > 0.1
+					@last_noise = @rocket_timer
+					$resource.play_sound("Rocket.wav", 0.7**@rocket_timer)
+				end
+				@cam.center = [x + rand(-0.5..0.5), -y + rand(-0.5..0.5) - 2]
+				draw_object x, y, :rocket_launched
+			end
 
 			@app.display
 		end

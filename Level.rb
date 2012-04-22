@@ -42,6 +42,11 @@ class Level
 					elsif char == "E"
 						set_block_type(x, y, :air)
 						@enemies.push(Enemy.new([x, y], :energy))
+					elsif char == "K"
+						set_block_type(x, y, :cat)
+					elsif char == "X"
+						set_block_type(x, y, :air)
+						@enemies.push(Enemy.new([x, y], :rocket))
 					else
 						set_block_type(x, y, :air)
 					end
